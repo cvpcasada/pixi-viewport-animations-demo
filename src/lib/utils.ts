@@ -1,5 +1,4 @@
 import { type ClassValue, clsx } from "clsx";
-import { Viewport } from "pixi-viewport";
 import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,19 +22,50 @@ export function transform(
   return lerp(oMin, oMax, invlerp(iMin, iMax, v));
 }
 
+type Container = {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+  scale?: { x: number; y: number };
+}
+
+function dim(viewport: Container) {
+  let scale = viewport.scale ?? { x: 1, y: 1 };
+  return {
+    width: viewport.width / scale.x,
+    height: viewport.height / scale.y,
+  };
+}
+
+function ct(viewport: Container) {
+  let vpDim = dim(viewport);
+  let scale = viewport.scale ?? { x: 1, y: 1 };
+  let [x, y] = [viewport.x ?? 0, viewport.y ?? 0];
+  return {
+    x: vpDim.width / 2 - x / scale.x,
+    y: vpDim.height / 2 - y / scale.y,
+  };
+}
+
 export function center(
-  viewport: Viewport,
+  viewport: {
+    width: number;
+    height: number;
+    scale?: { x: number; y: number };
+  },
   cursor: { x: number; y: number },
   scale: number = 1
 ) {
-  const newX = viewport.worldWidth / 2 - cursor.x * scale;
-  const newY = viewport.worldHeight / 2 - cursor.y * scale;
+  let vpDim = dim(viewport);
+  const newX = vpDim.width / 2 - cursor.x * scale;
+  const newY = vpDim.height / 2 - cursor.y * scale;
 
   return { x: newX, y: newY };
 }
 
 export function follow(
-  viewport: Viewport,
+  viewport: Container,
   cursor: { x: number; y: number },
   radius?: number
 ) {
@@ -43,7 +73,7 @@ export function follow(
   let toY = cursor.y;
 
   if (radius) {
-    const center = viewport.center;
+    const center = ct(viewport);
     const distance = Math.sqrt(
       Math.pow(cursor.y - center.y, 2) + Math.pow(cursor.x - center.x, 2)
     );
